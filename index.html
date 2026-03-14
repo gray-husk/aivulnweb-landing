@@ -776,14 +776,13 @@
         <!-- Netlify Form — works automatically on Netlify hosting -->
         <form
           class="waitlist-form"
-          name="waitlist"
+          action="https://api.web3forms.com/submit"
           method="POST"
-          data-netlify="true"
-          netlify-honeypot="bot-field"
           onsubmit="handleSubmit(event)"
         >
-          <input type="hidden" name="form-name" value="waitlist" />
-          <input type="hidden" name="bot-field" />
+          <input type="hidden" name="access_key" value="5e3683b3-0cb0-44d5-b4d1-0cc7c72a876a" />
+          <input type="hidden" name="subject" value="New AIVulnDB Waitlist Signup" />
+          <input type="hidden" name="redirect" value="false" />
 
           <input
             class="waitlist-input"
@@ -882,14 +881,13 @@
 
         <form
           class="waitlist-form"
-          name="waitlist-bottom"
+          action="https://api.web3forms.com/submit"
           method="POST"
-          data-netlify="true"
-          netlify-honeypot="bot-field-2"
           onsubmit="handleSubmitBottom(event)"
         >
-          <input type="hidden" name="form-name" value="waitlist-bottom" />
-          <input type="hidden" name="bot-field-2" />
+          <input type="hidden" name="access_key" value="5e3683b3-0cb0-44d5-b4d1-0cc7c72a876a" />
+          <input type="hidden" name="subject" value="New AIVulnDB Waitlist Signup (Bottom)" />
+          <input type="hidden" name="redirect" value="false" />
 
           <input
             class="waitlist-input"
@@ -956,15 +954,18 @@
       const form = e.target;
       const data = new FormData(form);
 
-      fetch('/', {
+      fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(data).toString()
+        body: data
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        form.style.display = 'none';
-        document.getElementById('success-msg').style.display = 'block';
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          form.style.display = 'none';
+          document.getElementById('success-msg').style.display = 'block';
+        } else {
+          document.getElementById('error-msg').style.display = 'block';
+        }
       })
       .catch(() => {
         document.getElementById('error-msg').style.display = 'block';
@@ -977,15 +978,18 @@
       const form = e.target;
       const data = new FormData(form);
 
-      fetch('/', {
+      fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(data).toString()
+        body: data
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        form.style.display = 'none';
-        document.getElementById('success-msg-bottom').style.display = 'block';
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) {
+          form.style.display = 'none';
+          document.getElementById('success-msg-bottom').style.display = 'block';
+        } else {
+          document.getElementById('error-msg-bottom').style.display = 'block';
+        }
       })
       .catch(() => {
         document.getElementById('error-msg-bottom').style.display = 'block';
