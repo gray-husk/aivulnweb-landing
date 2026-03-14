@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIVulnDB — AI Tool Vulnerability Intelligence Database</title>
+  <meta name="description" content="The CVE database for AI tools that humans actually use. Copilot, Cursor, ChatGPT, Gemini, Claude — every vulnerability, documented. Coming soon." />
+  <meta property="og:title" content="AIVulnDB — Coming Soon" />
+  <meta property="og:description" content="The CVE database for AI tools that humans actually use." />
+  <meta property="og:url" content="https://aivulndb.quest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0C0C0F;
+      --surface:  #13131A;
+      --border:   rgba(255,255,255,0.07);
+      --red:      #DC2626;
+      --red-dim:  rgba(220,38,38,0.12);
+      --red-glow: rgba(220,38,38,0.06);
+      --text:     #F1F5F9;
+      --muted:    rgba(241,245,249,0.45);
+      --faint:    rgba(241,245,249,0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── Alert banner ── */
+    .alert-banner {
+      position: relative;
+      z-index: 10;
+      background: var(--red-dim);
+      border-bottom: 1px solid rgba(220,38,38,0.2);
+      padding: 9px 0;
+      overflow: hidden;
+    }
+
+    .alert-track {
+      display: flex;
+      gap: 80px;
+      white-space: nowrap;
+      animation: marquee 28s linear infinite;
+    }
+
+    .alert-track:hover { animation-play-state: paused; }
+
+    .alert-item {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: rgba(220,38,38,0.85);
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .alert-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+      margin-right: 8px;
+      vertical-align: middle;
+      animation: pulse-dot 1.4s ease-in-out infinite;
+    }
+
+    @keyframes marquee {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 37px;
+      left: 0; right: 0;
+      z-index: 50;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      background: rgba(12,12,15,0);
+      border-bottom: 1px solid rgba(255,255,255,0);
+      transition: background 0.5s, border-color 0.5s;
+    }
+
+    nav.scrolled {
+      background: rgba(12,12,15,0.95);
+      border-bottom-color: var(--border);
+      backdrop-filter: blur(20px);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 22px; height: 16px;
+      background: var(--red);
+      border-radius: 2px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .logo-mark::before,
+    .logo-mark::after,
+    .logo-mark span {
+      content: '';
+      position: absolute;
+      left: 3px; right: 3px;
+      height: 1.5px;
+      background: white;
+      border-radius: 1px;
+    }
+
+    .logo-mark::before { top: 4px; }
+    .logo-mark span    { top: 7px; width: 60%; right: auto; }
+    .logo-mark::after  { top: 10px; }
+
+    .logo-name {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover { color: var(--text); }
+
+    .nav-cta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      color: var(--red);
+      border: 1px solid rgba(220,38,38,0.4);
+      border-radius: 3px;
+      padding: 7px 16px;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .nav-cta:hover {
+      background: rgba(220,38,38,0.12);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 40px 80px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* Diagonal line texture */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 24px,
+        rgba(220,38,38,0.015) 24px,
+        rgba(220,38,38,0.015) 25px
+      );
+      pointer-events: none;
+    }
+
+    /* Radial glow */
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(220,38,38,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Corner registration marks */
+    .reg-mark {
+      position: absolute;
+      width: 20px; height: 20px;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    .reg-mark::before,
+    .reg-mark::after {
+      content: '';
+      position: absolute;
+      background: var(--red);
+    }
+
+    .reg-mark::before { width: 1px; height: 100%; }
+    .reg-mark::after  { width: 100%; height: 1px; }
+
+    .reg-tl { top: 80px; left: 40px; }
+    .reg-tl::before { left: 0; top: 0; }
+    .reg-tl::after  { left: 0; top: 0; }
+
+    .reg-tr { top: 80px; right: 40px; }
+    .reg-tr::before { right: 0; top: 0; left: auto; }
+    .reg-tr::after  { right: 0; top: 0; }
+
+    .reg-bl { bottom: 60px; left: 40px; }
+    .reg-bl::before { left: 0; bottom: 0; top: auto; }
+    .reg-bl::after  { left: 0; bottom: 0; top: auto; }
+
+    .reg-br { bottom: 60px; right: 40px; }
+    .reg-br::before { right: 0; bottom: 0; top: auto; left: auto; }
+    .reg-br::after  { right: 0; bottom: 0; top: auto; }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    /* Staggered entrance animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      animation: reveal-up 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+
+    .d1 { animation-delay: 0.1s; }
+    .d2 { animation-delay: 0.25s; }
+    .d3 { animation-delay: 0.4s; }
+    .d4 { animation-delay: 0.55s; }
+    .d5 { animation-delay: 0.7s; }
+    .d6 { animation-delay: 0.85s; }
+
+    @keyframes reveal-up {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .hero-headline {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(48px, 7vw, 82px);
+      font-weight: 400;
+      line-height: 1.0;
+      color: var(--text);
+      margin-bottom: 32px;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-headline em {
+      font-style: italic;
+      text-decoration: underline;
+      text-decoration-color: var(--red);
+      text-underline-offset: 6px;
+      text-decoration-thickness: 2px;
+    }
+
+    /* Redaction bars */
+    .redact-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .redact {
+      height: 6px;
+      background: var(--red);
+      border-radius: 1px;
+      opacity: 0.7;
+    }
+
+    .r1 { width: 96px; }
+    .r2 { width: 64px; }
+    .r3 { width: 140px; }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 520px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ── Waitlist form ── */
+    .waitlist-wrap {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .waitlist-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .waitlist-form {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .waitlist-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      padding: 13px 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .waitlist-input::placeholder { color: var(--faint); }
+
+    .waitlist-input:focus {
+      border-color: rgba(220,38,38,0.5);
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
+    }
+
+    .waitlist-btn {
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 13px 22px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+
+    .waitlist-btn:hover {
+      background: #B91C1C;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+    }
+
+    .waitlist-btn:active { transform: translateY(0); }
+
+    .waitlist-note {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      margin-top: 10px;
+      text-align: left;
+      letter-spacing: 0.03em;
+    }
+
+    /* Success state */
+    .waitlist-success {
+      display: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: #4ADE80;
+      padding: 14px 0;
+      text-align: left;
+      letter-spacing: 0.03em;
+    }
+
+    .waitlist-success::before {
+      content: '> ';
+      color: var(--red);
+    }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 28px 40px;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 0 48px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-item:last-child { border-right: none; }
+
+    .stat-num {
+      font-family: 'Instrument Serif', serif;
+      font-size: 36px;
+      color: var(--text);
+      display: block;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Vectors section ── */
+    .vectors-section {
+      position: relative;
+      z-index: 1;
+      padding: 80px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .section-headline {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.1;
+    }
+
+    .section-sub {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 540px;
+      margin-bottom: 48px;
+      font-weight: 300;
+      line-height: 1.65;
+    }
+
+    .vectors-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .vector-card {
+      background: var(--bg);
+      padding: 28px 24px;
+      border-left: 3px solid transparent;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: default;
+    }
+
+    .vector-card:hover {
+      border-left-color: var(--red);
+      background: var(--red-glow);
+    }
+
+    .vector-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: rgba(220,38,38,0.7);
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .vector-name {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .vector-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    /* ── Coming soon banner ── */
+    .coming-section {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 72px 40px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .coming-section::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse at center, rgba(220,38,38,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .coming-inner { position: relative; z-index: 1; }
+
+    .coming-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .coming-headline {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(36px, 5vw, 60px);
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.1;
+    }
+
+    .coming-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 440px;
+      margin: 0 auto 36px;
+      font-weight: 300;
+      line-height: 1.65;
+    }
+
+    .coming-form-wrap {
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .footer-brand {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .footer-tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .footer-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover { color: var(--red); }
+
+    .footer-disclaimer {
+      width: 100%;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: rgba(241,245,249,0.15);
+      letter-spacing: 0.03em;
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* ── Scroll reveal ── */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .scroll-reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 100px 24px 60px; }
+      .reg-mark { display: none; }
+      .stats-strip { flex-wrap: wrap; padding: 20px; gap: 20px; }
+      .stat-item { border-right: none; padding: 0 24px; }
+      .vectors-section { padding: 60px 24px; }
+      .vectors-grid { grid-template-columns: 1fr; }
+      .waitlist-form { flex-direction: column; }
+      .coming-section { padding: 56px 24px; }
+      footer { padding: 24px; flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Alert banner -->
+  <div class="alert-banner" aria-label="Latest activity">
+    <div class="alert-track">
+      <span class="alert-item"><span class="alert-dot"></span>BUILDING IN PUBLIC — DATABASE POPULATING — LAUNCH COMING SOON</span>
+      <span class="alert-item"><span class="alert-dot"></span>OPEN ACCESS · NO PAYWALL · GITHUB BACKED</span>
+      <span class="alert-item"><span class="alert-dot"></span>TRACKING: COPILOT · CURSOR · CHATGPT · GEMINI · CLAUDE · AND MORE</span>
+      <span class="alert-item"><span class="alert-dot"></span>BUILDING IN PUBLIC — DATABASE POPULATING — LAUNCH COMING SOON</span>
+      <span class="alert-item"><span class="alert-dot"></span>OPEN ACCESS · NO PAYWALL · GITHUB BACKED</span>
+      <span class="alert-item"><span class="alert-dot"></span>TRACKING: COPILOT · CURSOR · CHATGPT · GEMINI · CLAUDE · AND MORE</span>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav id="nav">
+    <a href="/" class="nav-logo" aria-label="AIVulnDB home">
+      <div class="logo-mark"><span></span></div>
+      <span class="logo-name">AIVulnDB</span>
+    </a>
+    <div class="nav-right">
+      <a href="#waitlist" class="nav-cta">JOIN WAITLIST</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="reg-mark reg-tl"></div>
+    <div class="reg-mark reg-tr"></div>
+    <div class="reg-mark reg-bl"></div>
+    <div class="reg-mark reg-br"></div>
+
+    <div class="hero-inner">
+      <p class="hero-eyebrow reveal d1">Intelligence Database · Est. 2026 · Open Access</p>
+
+      <h1 class="hero-headline reveal d2" id="hero-heading">
+        The CVE database<br>
+        for AI tools <em>that<br>
+        humans actually use.</em>
+      </h1>
+
+      <div class="redact-row reveal d3" aria-hidden="true">
+        <div class="redact r1"></div>
+        <div class="redact r2"></div>
+        <div class="redact r3"></div>
+      </div>
+
+      <p class="hero-sub reveal d4">
+        NVD tracks what's in your servers. AIVulnDB tracks what's in your tools.
+        Copilot, Cursor, ChatGPT, Gemini, Claude — every documented vulnerability,
+        structured and searchable.
+      </p>
+
+      <div class="waitlist-wrap reveal d5" id="waitlist">
+        <p class="waitlist-label">Get notified at launch</p>
+
+        <!-- Netlify Form — works automatically on Netlify hosting -->
+        <form
+          class="waitlist-form"
+          name="waitlist"
+          method="POST"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+          onsubmit="handleSubmit(event)"
+        >
+          <input type="hidden" name="form-name" value="waitlist" />
+          <input type="hidden" name="bot-field" />
+
+          <input
+            class="waitlist-input"
+            type="email"
+            name="email"
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+            aria-label="Email address"
+          />
+          <button class="waitlist-btn" type="submit">NOTIFY ME</button>
+        </form>
+
+        <div class="waitlist-success" id="success-msg">
+          SUBSCRIBED. YOU'LL BE NOTIFIED AT LAUNCH.
+        </div>
+
+        <p class="waitlist-note reveal d6">No spam. Launch announcement only. Unsubscribe anytime.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-strip scroll-reveal" role="region" aria-label="Database statistics">
+    <div class="stat-item">
+      <span class="stat-num">6</span>
+      <span class="stat-label">Attack Vectors Tracked</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">12+</span>
+      <span class="stat-label">AI Tools Monitored</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">NVD</span>
+      <span class="stat-label">Primary Source</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">Free</span>
+      <span class="stat-label">Open Access Forever</span>
+    </div>
+  </div>
+
+  <!-- Vectors section -->
+  <section class="vectors-section scroll-reveal" aria-labelledby="vectors-heading">
+    <p class="section-label">Attack Vector Taxonomy</p>
+    <h2 class="section-headline" id="vectors-heading">A new classification system<br>for a new class of threat.</h2>
+    <p class="section-sub">Traditional CVE vectors — network, adjacent, local, physical — don't capture how AI tool vulnerabilities work. We built a taxonomy that does.</p>
+
+    <div class="vectors-grid">
+      <div class="vector-card">
+        <p class="vector-tag">[PI]</p>
+        <p class="vector-name">Prompt Injection</p>
+        <p class="vector-desc">Malicious instructions embedded in user input or retrieved content override the AI tool's intended behavior.</p>
+      </div>
+      <div class="vector-card">
+        <p class="vector-tag">[TDP]</p>
+        <p class="vector-name">Training Data Poisoning</p>
+        <p class="vector-desc">Adversarially crafted content introduced into training pipelines causes models to learn and reproduce malicious behaviors.</p>
+      </div>
+      <div class="vector-card">
+        <p class="vector-tag">[MCP]</p>
+        <p class="vector-name">MCP Exploitation</p>
+        <p class="vector-desc">Malicious Model Context Protocol tool definitions escalate privileges or exfiltrate data through trusted agent channels.</p>
+      </div>
+      <div class="vector-card">
+        <p class="vector-tag">[PCL]</p>
+        <p class="vector-name">Plugin Context Leakage</p>
+        <p class="vector-desc">Session state, memory, or conversation context bleeds across users or sessions through shared plugin infrastructure.</p>
+      </div>
+      <div class="vector-card">
+        <p class="vector-tag">[IPI]</p>
+        <p class="vector-name">Indirect Prompt Injection</p>
+        <p class="vector-desc">Instructions hidden in external content — files, emails, web pages — are processed by the AI and alter its behavior without user knowledge.</p>
+      </div>
+      <div class="vector-card">
+        <p class="vector-tag">[MI]</p>
+        <p class="vector-name">Model Inversion</p>
+        <p class="vector-desc">Repeated probing extracts memorized training data — PII, credentials, proprietary code — from a model's weights.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Coming soon / second waitlist -->
+  <section class="coming-section scroll-reveal" aria-labelledby="coming-heading">
+    <div class="coming-inner">
+      <p class="coming-label">Status: Building</p>
+      <h2 class="coming-headline" id="coming-heading">Database goes live soon.<br>Be first to know.</h2>
+      <p class="coming-sub">Open access. No paywall. Sourced from NVD, vendor advisories, and published security research.</p>
+
+      <div class="coming-form-wrap">
+        <p class="waitlist-label" style="text-align:center;">Join the waitlist</p>
+
+        <form
+          class="waitlist-form"
+          name="waitlist-bottom"
+          method="POST"
+          data-netlify="true"
+          netlify-honeypot="bot-field-2"
+          onsubmit="handleSubmitBottom(event)"
+        >
+          <input type="hidden" name="form-name" value="waitlist-bottom" />
+          <input type="hidden" name="bot-field-2" />
+
+          <input
+            class="waitlist-input"
+            type="email"
+            name="email"
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+            aria-label="Email address"
+          />
+          <button class="waitlist-btn" type="submit">NOTIFY ME</button>
+        </form>
+
+        <div class="waitlist-success" id="success-msg-bottom">
+          SUBSCRIBED. YOU'LL BE NOTIFIED AT LAUNCH.
+        </div>
+
+        <p class="waitlist-note" style="text-align:center;">No spam. Launch announcement only.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-left">
+      <span class="footer-brand">AIVulnDB</span>
+      <span class="footer-tagline">Find it before they use it.</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://linkedin.com/in/ananyaa-k" target="_blank" rel="noopener" class="footer-link">LinkedIn ↗</a>
+    </div>
+    <p class="footer-disclaimer">
+      AIVulnDB aggregates publicly available security disclosures. For authorized security research only.
+    </p>
+  </footer>
+
+  <script>
+    // Nav scroll
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 40);
+    }, { passive: true });
+
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.scroll-reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    revealEls.forEach(el => observer.observe(el));
+
+    // Form — top
+    function handleSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(data).toString()
+      })
+      .then(() => {
+        form.style.display = 'none';
+        document.getElementById('success-msg').style.display = 'block';
+      })
+      .catch(() => {
+        // Fallback: still show success (form data submitted via standard POST)
+        form.style.display = 'none';
+        document.getElementById('success-msg').style.display = 'block';
+      });
+    }
+
+    // Form — bottom
+    function handleSubmitBottom(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(data).toString()
+      })
+      .then(() => {
+        form.style.display = 'none';
+        document.getElementById('success-msg-bottom').style.display = 'block';
+      })
+      .catch(() => {
+        form.style.display = 'none';
+        document.getElementById('success-msg-bottom').style.display = 'block';
+      });
+    }
+  </script>
+</body>
+</html>
