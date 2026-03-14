@@ -438,6 +438,22 @@
       color: var(--red);
     }
 
+    /* Error state */
+    .waitlist-error {
+      display: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: #F87171;
+      padding: 14px 0;
+      text-align: left;
+      letter-spacing: 0.03em;
+    }
+
+    .waitlist-error::before {
+      content: '! ';
+      color: var(--red);
+    }
+
     /* ── Stats strip ── */
     .stats-strip {
       position: relative;
@@ -785,6 +801,10 @@
           SUBSCRIBED. YOU'LL BE NOTIFIED AT LAUNCH.
         </div>
 
+        <div class="waitlist-error" id="error-msg">
+          SOMETHING WENT WRONG. PLEASE TRY AGAIN.
+        </div>
+
         <p class="waitlist-note reveal d6">No spam. Launch announcement only. Unsubscribe anytime.</p>
       </div>
     </div>
@@ -887,6 +907,10 @@
           SUBSCRIBED. YOU'LL BE NOTIFIED AT LAUNCH.
         </div>
 
+        <div class="waitlist-error" id="error-msg-bottom">
+          SOMETHING WENT WRONG. PLEASE TRY AGAIN.
+        </div>
+
         <p class="waitlist-note" style="text-align:center;">No spam. Launch announcement only.</p>
       </div>
     </div>
@@ -937,14 +961,13 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(data).toString()
       })
-      .then(() => {
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
         form.style.display = 'none';
         document.getElementById('success-msg').style.display = 'block';
       })
       .catch(() => {
-        // Fallback: still show success (form data submitted via standard POST)
-        form.style.display = 'none';
-        document.getElementById('success-msg').style.display = 'block';
+        document.getElementById('error-msg').style.display = 'block';
       });
     }
 
@@ -959,13 +982,13 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams(data).toString()
       })
-      .then(() => {
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
         form.style.display = 'none';
         document.getElementById('success-msg-bottom').style.display = 'block';
       })
       .catch(() => {
-        form.style.display = 'none';
-        document.getElementById('success-msg-bottom').style.display = 'block';
+        document.getElementById('error-msg-bottom').style.display = 'block';
       });
     }
   </script>
